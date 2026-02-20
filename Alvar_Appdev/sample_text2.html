@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Read Private GitHub File</title>
+    <link rel="stylesheet" href="sample_text2.css">
+</head>
+
+<body>
+
+    <h1>GitHub Text Fetcher</h1>
+
+    <!-- Search bar to enter file path -->
+    <div class="search-container">
+        <input type="text" id="file-path-input" placeholder="Enter file path (e.g. kenshiro.txt)"
+            onkeydown="if(event.key==='Enter') fetchPrivateGitHubFile()" />
+        <button class="fetch-btn" onclick="fetchPrivateGitHubFile()">
+            Fetch File
+        </button>
+    </div>
+
+    <!-- File content display -->
+    <pre id="file-content" class="placeholder">File content will appear here...</pre>
+
+    <script>
+        async function fetchPrivateGitHubFile() {
+            const owner = "gabrielangeloalvar";  // Replace with the repository owner
+            const repo = "AppDevRepo";    // Replace with the repository name
+            const filePath = document.getElementById('file-path-input').value.trim();
+            const branch = "main";       // Replace with the branch name
+
+            const container = document.getElementById("file-content");
+
+            if (!filePath) {
+                container.className = "placeholder";
+                container.innerHTML = '<p class="warning-text">Please enter a file path.</p>';
+                return;
+            }
+
+            const token = "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"; // 🔒 Replace with your PAT
+
+            const url = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}?ref=${branch}`;
+
+            // Show loading state
+            container.className = "placeholder";
+            container.innerHTML = '<div class="spinner"></div><p class="status-text">Fetching file...</p>';
+
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        "Authorization": `Bearer ${token}`,
+                        "Accept": "application/vnd.github.v3+json"
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`${response.status} ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                const content = atob(data.content); // Decode Base64 content
+
+                container.className = "";
+                container.textContent = content;
+            } catch (error) {
+                console.error("Error fetching file:", error);
+                container.className = "placeholder";
+                container.innerHTML = '<p class="error-text">Failed to load file: ' + error.message + '</p>';
+            }
+        }
+    </script>
+
+</body>
+
+</html>

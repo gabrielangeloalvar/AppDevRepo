@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Image Fetcher</title>
+    <link rel="stylesheet" href="sample_img.css">
+</head>
+
+<body>
+
+    <h1>GitHub Image Fetcher</h1>
+
+    <!-- Search bar to enter file path -->
+    <div class="search-container">
+        <input type="text" id="file-path-input" placeholder="Enter file path (e.g. Hcdc_logo2.jpg)"
+            onkeydown="if(event.key==='Enter') fetchPrivateGitHubFile()" />
+        <button class="fetch-btn" onclick="fetchPrivateGitHubFile()">
+            Fetch File
+        </button>
+    </div>
+
+    <!-- Image display container -->
+    <pre id="image-container">File content will appear here...</pre>
+
+    <script>
+        async function fetchPrivateGitHubFile() {
+            const username = "gabrielangeloalvar";  // Replace with the repository owner
+            const repoName = "AppDevRepo";    // Replace with the repository name
+            const filePath = document.getElementById('file-path-input').value.trim();
+            const branch = "main";       // Replace with the branch name
+
+            if (!filePath) {
+                document.getElementById('image-container').innerHTML = '<p class="warning-text">Please enter a file path.</p>';
+                return;
+            }
+
+            const token = "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"; // 🔒 Replace with your PAT
+
+            const url = `https://api.github.com/repos/${username}/${repoName}/contents/${filePath}`;
+
+            // Show loading state
+            const container = document.getElementById('image-container');
+            container.innerHTML = '<div class="spinner"></div><p class="status-text">Fetching image...</p>';
+
+            // Fetch the image from GitHub API
+            fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    "Accept": "application/vnd.github.v3+json"
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.content) {
+                        // GitHub returns Base64 content for files under 1MB
+                        container.innerHTML = "";
+                        const base64Image = data.content;
+                        const imageUrl = `data:${data.encoding};base64,${base64Image}`;
+                        const img = new Image();
+                        img.src = imageUrl;
+                        container.appendChild(img);
+                    } else if (data.download_url) {
+                        // For large files (>1MB), use the download URL directly
+                        container.innerHTML = "";
+                        const img = new Image();
+                        img.src = data.download_url;
+                        container.appendChild(img);
+                    } else if (data.message) {
+                        container.innerHTML = `<p class="error-text">GitHub API: ${data.message}</p>`;
+                    } else {
+                        container.innerHTML = '<p class="error-text">Error: Image not found.</p>';
+                    }
+                })
+                .catch(error => {
+                    container.innerHTML = '<p class="error-text">Error fetching image from GitHub.</p>';
+                    console.error('Error fetching image from GitHub:', error);
+                });
+        }
+    </script>
+
+</body>
+
+</html>
